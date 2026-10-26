@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Five Senses</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#b3dffd; --panel:#ffffff; --ink:#0a4685; --accent:#72b8ee;
+  --ok:#2e9e5b; --ok-bg:#d9f5e3; --no:#d9534f; --no-bg:#fde3e2;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#0a2d52;--panel:#12457a;--ink:#eaf5ff;--accent:#72b8ee;--ok-bg:#1d5a3a;--no-bg:#6a2b2a;}
+}
+:root[data-theme="dark"]{--bg:#0a2d52;--panel:#12457a;--ink:#eaf5ff;--accent:#72b8ee;--ok-bg:#1d5a3a;--no-bg:#6a2b2a;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Baloo 2","Comic Sans MS",system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:16px}
+main{width:100%;max-width:760px;text-align:center}
+h1{font-size:clamp(1.6rem,5vw,2.4rem);margin:8px 0 4px;font-weight:800}
+.progress{font-size:1.1rem;font-weight:700;margin-bottom:8px}
+.q{background:var(--panel);border-radius:28px;padding:20px 16px;margin:8px 0 16px}
+.q h2{font-size:clamp(1.4rem,5vw,2.1rem);margin:0 0 4px;font-weight:800}
+.q p{margin:0;font-size:1rem;opacity:.8}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.choice{background:var(--panel);border:5px solid transparent;border-radius:24px;padding:12px 4px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .15s}
+.choice:hover{transform:scale(1.04)}
+.choice:focus-visible{outline:4px solid var(--ink);outline-offset:2px}
+.choice .pic{font-size:clamp(3.5rem,15vw,6rem);line-height:1.1}
+.choice .lbl{font-size:1.1rem;font-weight:700;visibility:hidden}
+.choice.right{border-color:var(--ok);background:var(--ok-bg)}
+.choice.right .lbl,.choice.wrong .lbl{visibility:visible}
+.choice.wrong{border-color:var(--no);background:var(--no-bg)}
+.msg{min-height:3rem;font-size:1.5rem;font-weight:800;margin:4px 0}
+button.next,button.again{background:var(--ink);color:var(--bg);border:0;border-radius:999px;padding:10px 32px;font:inherit;font-size:1.3rem;font-weight:800;cursor:pointer}
+button.next:focus-visible,button.again:focus-visible{outline:4px solid var(--accent);outline-offset:3px}
+button[hidden]{display:none}
+.done{font-size:clamp(3rem,14vw,5rem)}
+</style>
+</head>
+<body>
+<main>
+  <h1>My Five Senses</h1>
+  <div class="progress" id="progress"></div>
+  <section class="q"><h2 id="question"></h2><p id="english"></p></section>
+  <div class="choices" id="choices"></div>
+  <div class="msg" id="msg" aria-live="polite"></div>
+  <button class="next" id="next" hidden>Next</button>
+</main>
+<script>
+var ALL=[
+ {pic:"👀",name:"Eyes"},{pic:"👂",name:"Ears"},{pic:"👃",name:"Nose"},
+ {pic:"👅",name:"Tongue"},{pic:"✋",name:"Hand"}
+];
+var QS=[
+ {t:"What body part do you use to SEE things?",e:"",a:0},
+ {t:"What body part do you use to HEAR sounds?",e:"",a:1},
+ {t:"What body part do you use to SMELL flowers?",e:"",a:2},
+ {t:"What body part do you use to TASTE food?",e:"",a:3},
+ {t:"What do you use to HOLD and FEEL things?",e:"",a:4}
+];
+var i=0,score=0,locked=false;
+var $=function(id){return document.getElementById(id)};
+function shuffle(a){a=a.slice();for(var k=a.length-1;k>0;k--){var j=Math.floor(Math.random()*(k+1));var t=a[k];a[k]=a[j];a[j]=t}return a}
+function show(){
+  var q=QS[i];locked=false;
+  $("progress").textContent="Question "+(i+1)+" of "+QS.length;
+  $("question").textContent=q.t;$("english").textContent=q.e;
+  $("msg").textContent="";$("next").hidden=true;
+  var wrong=shuffle(ALL.map(function(_,k){return k}).filter(function(k){return k!==q.a})).slice(0,2);
+  var opts=shuffle([q.a].concat(wrong));
+  var box=$("choices");box.innerHTML="";
+  opts.forEach(function(k){
+    var b=document.createElement("button");b.className="choice";b.type="button";
+    b.setAttribute("aria-label",ALL[k].name);
+    b.innerHTML='<span class="pic" aria-hidden="true">'+ALL[k].pic+'</span><span class="lbl">'+ALL[k].name+'</span>';
+    b.onclick=function(){pick(b,k)};
+    box.appendChild(b);
+  });
+}
+function pick(b,k){
+  if(locked)return;
+  var q=QS[i];
+  if(k===q.a){
+    locked=true;score++;b.classList.add("right");
+    $("msg").textContent="Great job! 🎉";
+    $("next").textContent=i===QS.length-1?"Finish!":"Next";
+    $("next").hidden=false;$("next").focus();
+  }else{
+    b.classList.add("wrong");b.disabled=true;
+    $("msg").textContent="Try again! 💪";
+  }
+}
+$("next").onclick=function(){
+  if($("next").classList.contains("again")){i=0;score=0;$("next").classList.remove("again");$("next").className="next";show();return}
+  i++;if(i<QS.length){show();return}
+  $("progress").textContent="";
+  $("question").innerHTML='<span class="done">🌟</span><br>Well done!';
+  $("english").textContent="You know your five senses!";
+  $("choices").innerHTML="";$("msg").textContent="";
+  $("next").textContent="Play again";$("next").className="next again";$("next").hidden=false;
+};
+show();
+</script>
+</body>
+</html>
